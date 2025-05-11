@@ -5,7 +5,7 @@ import cors from 'cors';
 
 const app = express();
 
-const whitelist = ['http://localhost:5173', 'https://flai_sdk.netlify.app'];
+const whitelist = ['http://localhost:5173', 'https://flai-sdk.netlify.app'];
 const corsOptions = {
   credentials: true,
   origin: function (origin, callback) {
