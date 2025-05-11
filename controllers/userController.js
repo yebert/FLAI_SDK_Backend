@@ -30,7 +30,13 @@ const getUserById = async (req, res) => {
 };
 
 //authController.signUp()
-const createUser = async (req, res) => {};
+const createUser = async (req, res) => {
+    const latestLogin = Date.now();
+    const user = await User.create({...req.body, latestLogin});
+    const userOhnePassword = { ...user.toJSON() };
+  delete userOhnePassword.password;
+  res.status(201).json(userOhnePassword);
+};
 
 const deleteUser = async (req, res) => {
   const { id } = req.params;

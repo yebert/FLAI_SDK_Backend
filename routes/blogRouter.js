@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
-  getBlogById,
-  getBlogs,
+  getPostById,
+  getPosts,
   createPost,
   deletePost,
   updatePost,
@@ -9,7 +9,7 @@ import {
 
 const blogRouter = Router();
 
-blogRouter.route("/").get(getBlogs).post(createPost);
-blogRouter.route("/:id").get(getBlogById).put(updatePost).delete(deletePost);
+blogRouter.route("/").get(getPosts).post(createPost);
+blogRouter.route("/:id").get(getPostById).put(updatePost).delete(deletePost);
 
 export default blogRouter;

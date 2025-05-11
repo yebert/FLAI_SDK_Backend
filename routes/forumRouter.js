@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
-  getQuestionById,
-  getQuestions,
+  getPostById,
+  getPosts,
   createPost,
   deletePost,
   updatePost,
@@ -13,10 +13,10 @@ import {
 
 const forumRouter = Router();
 
-forumRouter.route("/").get(getQuestions).post(createPost);
+forumRouter.route("/").get(getPosts).post(createPost);
 forumRouter
   .route("/:id")
-  .get(getQuestionById)
+  .get(getPostById)
   .put(updatePost)
   .delete(deletePost);
 

@@ -17,6 +17,6 @@ const Tag = sequelize.define(
   { paranoid: true }
 );
 
-Tag.sync({ force: true });
+Tag.sync();
 
 export default Tag;

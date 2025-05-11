@@ -3,7 +3,7 @@ import {
   createBookmark,
   deleteBookmark,
   getBookmarks,
-} from "../controllers/postController";
+} from "../controllers/postController.js";
 
 const bookmarkRouter = Router();
 

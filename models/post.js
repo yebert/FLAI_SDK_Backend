@@ -6,7 +6,7 @@ const Post = sequelize.define(
   {
     title: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     content: {
       type: DataTypes.TEXT,

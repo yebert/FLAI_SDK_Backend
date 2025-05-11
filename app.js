@@ -34,6 +34,11 @@ v1Router.use("/forum", forumRouter);
 v1Router.use("/follower", followerRouter);
 v1Router.use("/bookmarks", bookmarkRouter);
 
+app.get('/', async (req, res) => {
+  
+  res.json({ message: 'Running'});
+});
+
 app.use("/api/v1", v1Router);
 
 app.use("/*splat", (req, res) => {
