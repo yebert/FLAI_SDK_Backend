@@ -23,6 +23,6 @@ forumRouter
 forumRouter.route("/tags").get(getTags).post(createTag);
 forumRouter.route("/tags/:id").put(updateTag);
 
-forumRouter.route("/ai").post(createAIPost);
+forumRouter.route("/ai/:id").post(createAIPost);
 
 export default forumRouter;

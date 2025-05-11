@@ -61,6 +61,10 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    latestAnswerToOwnPost: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     interests: {
       allowNull: false,
       type: DataTypes.ARRAY(DataTypes.STRING),
