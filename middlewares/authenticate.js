@@ -1,6 +1,6 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/UserModel.js';
-import ErrorResponse from '../utils/ErrorResponse.js';
+import jwt from "jsonwebtoken";
+import User from "../models/user.js";
+import ErrorResponse from "../utils/ErrorResponse.js";
 
 const authenticate = async (req, res, next) => {
   let { token } = req.cookies;
@@ -8,9 +8,9 @@ const authenticate = async (req, res, next) => {
   const { authorization } = req.headers;
 
   if (authorization) {
-    token = authorization.split(' ')[1];
+    token = authorization.split(" ")[1];
   }
-  if (!token) throw new ErrorResponse('Not authenticated', 401);
+  if (!token) throw new ErrorResponse("Not authenticated", 401);
 
   let ID;
   try {
@@ -18,11 +18,11 @@ const authenticate = async (req, res, next) => {
     ID = id;
   } catch (error) {
     // console.log(error);
-    throw new ErrorResponse('Invalid token', 401);
+    throw new ErrorResponse("Invalid token", 401);
   }
 
   const user = await User.findById(ID);
-  if (!user) throw new ErrorResponse('Not Authenticated', 401);
+  if (!user) throw new ErrorResponse("Not Authenticated", 401);
 
   req.user = user;
 
