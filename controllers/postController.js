@@ -14,6 +14,12 @@ const systemInstruction =
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 //search
+const searchPosts = async (req, res)=>{
+
+}
+
+
+
 const getPosts = async (req, res) => {
   try {
 
@@ -63,6 +69,8 @@ const getPostById = async (req, res) => {
       relCommentsToAnswer = await Post.findAll({where: {refId : e.id, type:"comment"}});
       answersArray.push({...e, relComments: relCommentsToAnswer});
     });
+    post.viewCount+=1;
+    await post.save();
     const responseObject = {mainPost: {...post, comments :relatedComments}, answers: [...answersArray]};
     res.status(200).json(responseObject);
   } catch (error) {
@@ -74,6 +82,7 @@ const getPostById = async (req, res) => {
 
 const createAIPost = async (req, res) => {
   try {
+    
     const{id}=req.params;
     const {message}=req.body;
     const response = await ai.models.generateContent({
@@ -150,10 +159,12 @@ const createPost = async (req, res) => {
 
 const updatePost = async (req, res) => {
   try {
+    const{user}=req.user;
     const {id}=req.params;
     const post = await Post.findByPk(id);
  
     if(!post) return res.status(404).json({ message: "post not found" });
+    if(post.userId!=user.id) return res.status(403).json({message: "forbidden!"});
     await post.update(req.body);
     res.status(200).json({message: "Post successfully updated", post});
   } catch (error) {
@@ -164,19 +175,21 @@ const updatePost = async (req, res) => {
 
 const deletePost = async (req, res) => {
   try {
+    const{user}=req.user;
     const {id}=req.params;
     const post = await Post.findByPk(id);
  
     if(!post) return res.status(404).json({ message: "post not found" });
+    if(post.userId!=user.id) return res.status(403).json({message: "forbidden!"});
     const relatedComments = await Post.findAll({where: {refId : id, type:"comment"}});
     const relatedAnswers = await Post.findAll({where: {refId : id, type:"answer"}});
-    const user = await User.findByPk(post.userId);
+    const postUser = await User.findByPk(post.userId);
     await post.destroy();
     switch(post.type){
-      case "question":{user.numberOfPosts-=1; user.points-=10; await user.save(); break;}
-      case "blog":{user.numberOfBlogs-=1; user.points-=15; await user.save(); break;}
-      case "answer":{ user.points-=5; await user.save(); break;}
-      case "comment":{ user.points-=1; await user.save(); break;}
+      case "question":{postUser.numberOfPosts-=1; postUser.points-=10; await postUser.save(); break;}
+      case "blog":{postUser.numberOfBlogs-=1; postUser.points-=15; await postUser.save(); break;}
+      case "answer":{ postUser.points-=5; await postUser.save(); break;}
+      case "comment":{ postUser.points-=1; await postUser.save(); break;}
     }
     relatedAnswers.forEach(async (e)=>{
       relCommentsToAnswer = await Post.findAll({where: {refId : e.id, type:"comment"}});
@@ -220,9 +233,11 @@ const createBookmark = async (req, res) => {
 
 const deleteBookmark = async (req, res) => {
   try {
+    const {user}=req.user;
     const {id}=req.params;
     const bookmark = await Bookmark.findByPk(id);
     if(!bookmark) return res.status(404).json({message: "Bookmark not found"});
+    if(bookmark.userID!=user.id) return res.status(403).json({message: "forbidden!"});
     await bookmark.destroy();
   } catch (error) {
     console.log(error);
@@ -281,6 +296,7 @@ const deleteTag = async (req, res) => {
 };
 
 export {
+  searchPosts,
   getPosts,
   getPostById,
   createPost,

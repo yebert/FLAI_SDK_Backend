@@ -5,13 +5,14 @@ import {
   deleteFollowerConnection,
   getAllFollowers,
 } from "../controllers/userController.js";
+import authenticate from "../middlewares/authenticate.js";
 
 const followerRouter = Router();
 
 followerRouter
   .route("/:id")
   .get(getAllFollowers)
-  .post(createFollowerConnection)
-  .delete(deleteFollowerConnection);
+  .post(authenticate, createFollowerConnection)
+  .delete(authenticate, deleteFollowerConnection);
 
 export default followerRouter;

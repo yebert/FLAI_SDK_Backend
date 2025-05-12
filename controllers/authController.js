@@ -6,8 +6,18 @@ import ErrorResponse from "../utils/ErrorResponse.js";
 
 const createToken = (id) =>
   jwt.sign({ id }, process.env.SECRET, {
-    expiresIn: "1d",
+    expiresIn: `${process.env.JWT_EXPIRES_IN}d`,
   });
+
+  const setAuthCookie = (res, token) => {
+  const secure = !['development', 'test'].includes(process.env.NODE_ENV);
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure,
+    sameSite: 'none',
+    expires: new Date(Date.now() + process.env.JWT_EXPIRES_IN * 24 * 60 * 60 * 1000),
+  });
+};
 
 const userSignup = async (req, res) => {
   const { email, password } = req.body;
@@ -22,6 +32,7 @@ const userSignup = async (req, res) => {
   const user = await User.create({ ...req.body, password: hashedPW });
   delete user.password;
   const token = createToken(user.id);
+  setAuthCookie(res, token);
   res.status(201).json({ message: "User created successfully", token, user });
 };
 
@@ -37,8 +48,13 @@ const login = async (req, res) => {
   const token = createToken(user.id);
 
   delete user.password;
-
+  setAuthCookie(res, token);
   res.json({ message: "Logged in", token, user });
 };
 
-export { userSignup, login };
+const logout = (req, res) => {
+  res.clearCookie('token');
+  res.json({ message: 'Logout successful' });
+};
+
+export { userSignup, login, logout };
