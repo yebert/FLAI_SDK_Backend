@@ -9,13 +9,15 @@ const createToken = (id) =>
     expiresIn: `${process.env.JWT_EXPIRES_IN}d`,
   });
 
-  const setAuthCookie = (res, token) => {
-  const secure = !['development', 'test'].includes(process.env.NODE_ENV);
-  res.cookie('token', token, {
+const setAuthCookie = (res, token) => {
+  const secure = !["development", "test"].includes(process.env.NODE_ENV);
+  res.cookie("token", token, {
     httpOnly: true,
     secure,
-    sameSite: 'none',
-    expires: new Date(Date.now() + process.env.JWT_EXPIRES_IN * 24 * 60 * 60 * 1000),
+    sameSite: "none",
+    expires: new Date(
+      Date.now() + process.env.JWT_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
   });
 };
 
@@ -24,11 +26,11 @@ const userSignup = async (req, res) => {
 
   const emailInUse = await User.findOne({ where: { email } });
   if (emailInUse) throw new ErrorResponse("Email already in use", 409);
-
+  console.log("entered userSignup");
   // passw0rd hashing
   const salt = await bcrypt.genSalt(15);
   const hashedPW = await bcrypt.hash(password, salt);
-
+  console.log("passed hashing");
   const user = await User.create({ ...req.body, password: hashedPW });
   delete user.password;
   const token = createToken(user.id);
@@ -53,8 +55,15 @@ const login = async (req, res) => {
 };
 
 const logout = (req, res) => {
-  res.clearCookie('token');
-  res.json({ message: 'Logout successful' });
+  res.clearCookie("token");
+  res.json({ message: "Logout successful" });
 };
 
-export { userSignup, login, logout };
+const getMe = async (req, res) => {
+  const { id } = req.user;
+
+  const data = await User.findById(id);
+  res.json({ message: "Logged in", data });
+};
+
+export { userSignup, login, logout, getMe };

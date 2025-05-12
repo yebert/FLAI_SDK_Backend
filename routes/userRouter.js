@@ -6,15 +6,24 @@ import {
   deleteUser,
   updateUser,
 } from "../controllers/userController.js";
-import { login, logout, userSignup } from "../controllers/authController.js";
+import {
+  getMe,
+  login,
+  logout,
+  userSignup,
+} from "../controllers/authController.js";
 import authenticate from "../middlewares/authenticate.js";
 
 const userRouter = Router();
 userRouter.post("/login", login);
 userRouter.post("/signup", userSignup);
 userRouter.post("/logout", logout);
-
+userRouter.get("/me", authenticate, getMe);
 userRouter.route("/").get(getUsers).post(userSignup);
-userRouter.route("/:id").get(getUserById).put(authenticate, updateUser).delete(authenticate, deleteUser);
+userRouter
+  .route("/:id")
+  .get(getUserById)
+  .put(authenticate, updateUser)
+  .delete(authenticate, deleteUser);
 
 export default userRouter;
