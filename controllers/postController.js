@@ -75,42 +75,54 @@ const getPostById = async (req, res) => {
     const relatedComments = await Post.findAll({
       where: { refId: id, type: "comment" },
     });
-
+    console.log("Related Comments" + relatedComments);
     let relatedCommentsArray = [];
-    relatedComments.forEach(async (rc) => {
+    for (const rc of relatedComments) {
       let cUser = await User.findByPk(rc.userId);
       relatedCommentsArray.push({
         ...rc.dataValues,
         userName: cUser.name,
         image: cUser.imageURL,
       });
-    });
+    }
 
     const relatedAnswers = await Post.findAll({
       where: { refId: id, type: "answer" },
     });
+    console.log("Related Answers: " + relatedAnswers.length);
     let answersArray = [];
-    relatedAnswers.forEach(async (e) => {
-      let answerUser = await User.findByPk(e.userId);
+    for (const e of relatedAnswers) {
+      console.log("Entered related Answer Loop");
+      let answerUser = {
+        name: "Robo Pinta",
+        imageURL:
+          "https://res.cloudinary.com/dtgshnrcb/image/upload/v1747164078/bmg6rz2lpdqv6p745mad.png",
+      };
+      if ((e.userId = !0)) {
+        answerUser = await User.findByPk(e.userId);
+      }
       let rCtA = [];
       let relCommentsToAnswer = await Post.findAll({
         where: { refId: e.id, type: "comment" },
       });
-      relCommentsToAnswer.forEach(async (r) => {
+      for (const r of relCommentsToAnswer) {
+        console.log("Entered Comments to Answer Loop");
         let commentUser = await User.findByPk(r.userId);
         rCtA.push({
           ...r.dataValues,
           userName: commentUser.name,
           image: commentUser.imageURL,
         });
-      });
+      }
+      console.log("XYZ:" + e);
       answersArray.push({
         ...e.dataValues,
-        userName: user.name,
+        userName: answerUser.name,
         image: answerUser.imageURL,
-        comments: rCtA,
+        comments: [...rCtA],
       });
-    });
+    }
+    console.log("AnswersArray: " + answersArray);
     post.viewCount += 1;
     await post.save();
     const responseObject = {
@@ -122,6 +134,7 @@ const getPostById = async (req, res) => {
       },
       answers: [...answersArray],
     };
+    console.log("Nach Objektinitialisierung");
     res.status(200).json(responseObject);
   } catch (error) {
     console.log(error);
@@ -149,7 +162,16 @@ const createAIPost = async (req, res) => {
       refId: id,
     };
     await Post.create(aiAnswer);
-    res.json({ message, aiResponse: aiAnswer });
+    res.json({
+      message,
+      aiResponse: {
+        ...aiAnswer,
+        comments: [],
+        userName: "Robo Pinta",
+        image:
+          "https://res.cloudinary.com/dtgshnrcb/image/upload/v1747164078/bmg6rz2lpdqv6p745mad.png",
+      },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Error creating AI post" });
@@ -202,9 +224,14 @@ const createPost = async (req, res) => {
       }
     }
 
-    res
-      .status(201)
-      .json({ message: "Post created successfully", createdPost: post });
+    res.status(201).json({
+      message: "Post created successfully",
+      createdPost: {
+        ...post.dataValues,
+        userName: user.name,
+        image: user.imageURL,
+      },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Error creating post" });
