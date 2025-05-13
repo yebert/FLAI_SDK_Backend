@@ -21,7 +21,7 @@ const authenticate = async (req, res, next) => {
     throw new ErrorResponse("Invalid token", 401);
   }
 
-  const user = await User.findById(ID);
+  const user = await User.findByPk(ID);
   if (!user) throw new ErrorResponse("Not Authenticated", 401);
 
   req.user = user;

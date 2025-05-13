@@ -23,11 +23,11 @@ const searchPosts = async (req, res)=>{
 const getPosts = async (req, res) => {
   try {
 
-    let questions = {};
+    let posts = [];
     let { filter, page, limit, type } = req.query;
     console.log(filter);
     if (!filter && !page && !limit) {
-      questions = await Post.findAll({ where: { type } });
+      posts = await Post.findAll({ where: { type }, order:[["createdAt","DESC"]] });
     } else {
       let offset = 0;
       let parsedLimit = parseInt(limit);
@@ -38,7 +38,7 @@ const getPosts = async (req, res) => {
         offset = (parsedPage - 1) * parsedLimit;
       }
       if(!filter) {filter="";}
-      questions = await Post.findAll(
+      posts = await Post.findAll(
         {
           offset,
           limit: parsedLimit,
@@ -48,8 +48,10 @@ const getPosts = async (req, res) => {
         
       );
     }
-
-    res.json(questions );
+    const returnPostArray=[];
+    posts.forEach((e)=>{returnPostArray.push(e.dataValues)});
+    console.log(returnPostArray);
+    res.json({posts:returnPostArray});
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Error fetching questions" });
@@ -62,16 +64,23 @@ const getPostById = async (req, res) => {
     const post = await Post.findByPk(id);
  
     if(!post) return res.status(404).json({ message: "post not found" });
+    const user = await User.findByPk(post.userId);
     const relatedComments = await Post.findAll({where: {refId : id, type:"comment"}});
     const relatedAnswers = await Post.findAll({where: {refId : id, type:"answer"}});
     let answersArray =  [];
     relatedAnswers.forEach(async (e)=>{
-      relCommentsToAnswer = await Post.findAll({where: {refId : e.id, type:"comment"}});
-      answersArray.push({...e, relComments: relCommentsToAnswer});
+      let answerUser = await User.findByPk(e.userId);
+      let rCtA = [];
+      let relCommentsToAnswer = await Post.findAll({where: {refId : e.id, type:"comment"}});
+      relCommentsToAnswer.forEach(async (r)=>{
+        let commentUser = await User.findByPk(r.userId);
+        rCtA.push({...r.dataValues, userName:commentUser.name});
+      })
+      answersArray.push({...e.dataValues, userName:user.name, comments: rCtA});
     });
     post.viewCount+=1;
     await post.save();
-    const responseObject = {mainPost: {...post, comments :relatedComments}, answers: [...answersArray]};
+    const responseObject = {mainPost: {...post.dataValues, userName:user.name, comments :[...relatedComments]}, answers: [...answersArray]};
     res.status(200).json(responseObject);
   } catch (error) {
     console.log(error);
