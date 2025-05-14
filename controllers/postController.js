@@ -14,7 +14,64 @@ const systemInstruction =
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 //search
-const searchPosts = async (req, res) => {};
+const searchPosts = async (req, res) => {
+  try {
+    const {searchString, type}= req.body;
+  let returnArray = [];
+  let allPosts = []
+  if(type==null){
+    allPosts = await Post.findAll({
+              where: {[Op.or]: [
+                { type: "question" },
+                { type: "blog" },
+              ],},
+              order: [["createdAt", "DESC"]],
+            });    
+  } else {
+    allPosts = await Post.findAll({
+        where: { type },
+        order: [["createdAt", "DESC"]],
+      });
+  }
+  let allPostsMap = allPosts.map((e)=>e.dataValues);
+  
+  let searchStringArray = searchString.trim().toLowerCase().split(" ");
+  console.log(searchStringArray);
+  for (const p of allPostsMap){
+    
+    let matchesTitle = 0;
+    let matchesTag = 0;
+    let matchesContent = 0
+    let tagsArrayOfPost = p.tags.length > 0? p.tags.map((e)=> e.toLowerCase()) : [];
+    let title = p.title.toLowerCase();
+    let content = p.content.toString().toLowerCase();
+    console.log(tagsArrayOfPost)
+    for (const s of searchStringArray){
+      console.log(s);
+      if(title.includes(s) ){
+        matchesTitle+=1;
+      }
+      if(content.includes(s) ){
+        matchesContent+=1;
+      } 
+      if(tagsArrayOfPost.includes(s)){
+        matchesTag+=1;
+      }       
+    }
+
+
+    if(matchesTag!==0 || matchesTitle!==0 || matchesContent!==0){
+      let searchResult = {...p, searchRank: matchesTag+matchesTitle+matchesContent}
+      returnArray.push(searchResult);
+    }    
+  }
+  returnArray.sort((a,b)=>b.searchRank - a.searchRank);
+  res.status(200).json(returnArray);
+  } catch (error) {
+     console.log(error);
+    res.status(500).json({ error: "Error searching questions" });
+  }
+};
 
 const getPosts = async (req, res) => {
   try {
@@ -57,7 +114,6 @@ const getPosts = async (req, res) => {
     posts.forEach((e) => {
       returnPostArray.push(e.dataValues);
     });
-    console.log(returnPostArray);
     res.json({ posts: returnPostArray });
   } catch (error) {
     console.log(error);
@@ -75,7 +131,7 @@ const getPostById = async (req, res) => {
     const relatedComments = await Post.findAll({
       where: { refId: id, type: "comment" },
     });
-    console.log("Related Comments" + relatedComments);
+    
     let relatedCommentsArray = [];
     for (const rc of relatedComments) {
       let cUser = await User.findByPk(rc.userId);
@@ -85,28 +141,23 @@ const getPostById = async (req, res) => {
         image: cUser.imageURL,
       });
     }
-
+    let hasAIAnswer = false;
     const relatedAnswers = await Post.findAll({
       where: { refId: id, type: "answer" },
     });
-    console.log("Related Answers: " + relatedAnswers.length);
+    
     let answersArray = [];
     for (const e of relatedAnswers) {
-      console.log("Entered related Answer Loop");
-      let answerUser = {
-        name: "Robo Pinta",
-        imageURL:
-          "https://res.cloudinary.com/dtgshnrcb/image/upload/v1747164078/bmg6rz2lpdqv6p745mad.png",
-      };
-      if ((e.userId = !0)) {
-        answerUser = await User.findByPk(e.userId);
-      }
+      
+      let answerUser = await User.findByPk(e.userId);
+      if(e.userId == 0) hasAIAnswer=true;
+           
       let rCtA = [];
       let relCommentsToAnswer = await Post.findAll({
         where: { refId: e.id, type: "comment" },
       });
       for (const r of relCommentsToAnswer) {
-        console.log("Entered Comments to Answer Loop");
+        
         let commentUser = await User.findByPk(r.userId);
         rCtA.push({
           ...r.dataValues,
@@ -114,7 +165,7 @@ const getPostById = async (req, res) => {
           image: commentUser.imageURL,
         });
       }
-      console.log("XYZ:" + e);
+      
       answersArray.push({
         ...e.dataValues,
         userName: answerUser.name,
@@ -122,7 +173,7 @@ const getPostById = async (req, res) => {
         comments: [...rCtA],
       });
     }
-    console.log("AnswersArray: " + answersArray);
+    
     post.viewCount += 1;
     await post.save();
     const responseObject = {
@@ -133,8 +184,9 @@ const getPostById = async (req, res) => {
         comments: [...relatedCommentsArray],
       },
       answers: [...answersArray],
+      hasAIAnswer
     };
-    console.log("Nach Objektinitialisierung");
+    
     res.status(200).json(responseObject);
   } catch (error) {
     console.log(error);
@@ -162,6 +214,9 @@ const createAIPost = async (req, res) => {
       refId: id,
     };
     await Post.create(aiAnswer);
+    const refObject = await Post.findByPk(id);
+    refObject.numberOfAnswers+=1;
+    await refObject.save();
     res.json({
       message,
       aiResponse: {
@@ -213,7 +268,7 @@ const createPost = async (req, res) => {
       }
     } else {
       const user = await User.findByPk(post.userId);
-      if (post.type == "question") {
+      if (post.type == "question") {        
         user.numberOfPosts += 1;
         user.points += 10;
         await user.save();
@@ -222,6 +277,14 @@ const createPost = async (req, res) => {
         user.points += 15;
         await user.save();
       }
+      let interestsOfUser = user.interests;
+      for (const t in post.tags){
+        interestsOfUser.push(t);
+      }
+      let setOfInterests = new Set(interestsOfUser);
+      let interestsToSave = [...setOfInterests];
+      user.interests = interestsToSave;
+      await user.save();
     }
 
     res.status(201).json({
