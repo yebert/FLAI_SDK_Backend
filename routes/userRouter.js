@@ -5,6 +5,7 @@ import {
   createUser,
   deleteUser,
   updateUser,
+  getPostsOfUserInterests
 } from "../controllers/userController.js";
 import {
   getMe,
@@ -20,6 +21,7 @@ userRouter.post("/signup", userSignup);
 userRouter.post("/logout", logout);
 userRouter.get("/me", authenticate, getMe);
 userRouter.route("/").get(getUsers).post(userSignup);
+userRouter.route("/interests/:id").get(getPostsOfUserInterests);
 userRouter
   .route("/:id")
   .get(getUserById)

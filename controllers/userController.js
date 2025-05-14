@@ -1,12 +1,16 @@
 import ErrorResponse from "../utils/ErrorResponse.js";
 import User from "../models/user.js";
 import Follower from "../models/follower.js";
+import Post from "../models/post.js";
+import { Op } from "sequelize";
 
 const getUsers = async (req, res) => {
   try {
     console.log(req.headers);
     const users = await User.findAll({
       attributes: { exclude: ["password"] },
+      order: [["points", "DESC"]],
+      limit : 3 
     });
     res.json(users);
   } catch (error) {
@@ -154,6 +158,34 @@ const getAllFollowers = async (req, res) => {
   }
 };
 
+const getPostsOfUserInterests = async (req, res) => {
+  const {id} = req.params;
+  try {
+    let returnArray = [];
+    const user = await User.findByPk(id);
+    if(!user) return res.status(404).json({message: "User not found"});
+
+    const userInterestsLength = user.interests.length;
+    
+    if(userInterestsLength == 0){
+      let posts = await Post.findAll({where: {refId:null, isPrivate:false}, order: [["createdAt", "DESC"]], limit:10});
+      returnArray = posts;
+    } else if (userInterestsLength == 1){
+      let posts = await Post.findAll({where: {tags: { [Op.contains]: [user.interests[0]] }, refId: null, isPrivate:false}, order: [["createdAt", "DESC"]], limit:10});
+      returnArray = posts;
+    } else {
+      let randomIndex = Math.floor(Math.random()*user.interests.length);
+      let posts = await Post.findAll({where: {tags: { [Op.contains]: [user.interests[randomIndex]] }, refId: null, isPrivate:false}, order: [["createdAt", "DESC"]], limit:10});
+      returnArray = posts;
+    }    
+    console.log(returnArray);
+    res.status(200).json(returnArray);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "server error" });
+  }
+}
+
 export {
   getUsers,
   createUser,
@@ -163,4 +195,5 @@ export {
   createFollowerConnection,
   deleteFollowerConnection,
   getAllFollowers,
+  getPostsOfUserInterests
 };
